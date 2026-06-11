@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live-Bewertung</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap');
+
+:root {
+  --bg:     #0b0d14;
+  --border: #1e2236;
+  --text:   #dde1f5;
+  --muted:  #3d4260;
+  --green:  #27d98c;
+  --red:    #f0443a;
+  --white:  #eef0ff;
+  --gold:   #f5c842;
+  --silver: #a8b8d0;
+  --bronze: #d4845a;
+  --accent: #5b6cf9;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── TOP BAR ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #0d0f18;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.topbar h1 { font-size:.95rem; font-weight:800; color:#fff; letter-spacing:-.02em; }
+.topbar input {
+  background:#181b28; border:1px solid var(--border); color:var(--text);
+  padding:6px 11px; border-radius:8px; font-family:'Outfit',sans-serif;
+  font-size:.83rem; outline:none; width:130px; transition:border-color .2s;
+}
+.topbar input:focus { border-color:var(--accent); }
+.topbar input::placeholder { color:var(--muted); }
+.tbtn {
+  padding:6px 12px; border:none; border-radius:8px;
+  font-family:'Outfit',sans-serif; font-size:.8rem; font-weight:600;
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.tbtn-add { background:var(--accent); color:#fff; }
+.tbtn-add:hover { background:#4a5be8; }
+.tbtn-sm  { background:#181b28; color:var(--muted); border:1px solid var(--border); }
+.tbtn-sm:hover { color:var(--text); border-color:var(--muted); }
+.tbtn-preset { background:#181b28; color:#6a70a0; border:1px solid var(--border); font-size:.75rem; }
+.tbtn-preset:hover { color:var(--text); border-color:var(--accent); }
+.spacer { flex:1; }
+
+/* ── SPLIT ── */
+.split {
+  flex:1;
+  display:grid;
+  grid-template-columns: 1fr 1px 220px;
+  overflow:hidden;
+}
+.divider { background:var(--border); }
+
+.panel { display:flex; flex-direction:column; overflow:hidden; }
+.panel-head {
+  padding:7px 12px 6px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.panel-head h2 {
+  font-size:.72rem; font-weight:700; color:var(--muted);
+  letter-spacing:.07em; text-transform:uppercase;
+}
+.panel-body {
+  flex:1; overflow-y:auto; padding:7px 8px 16px;
+  scrollbar-width:thin; scrollbar-color:#1e2236 transparent;
+}
+.panel-body::-webkit-scrollbar { width:4px; }
+.panel-body::-webkit-scrollbar-thumb { background:#1e2236; border-radius:4px; }
+
+/* ── LEFT: BEWERTUNG ── */
+.row-list { display:flex; flex-direction:column; gap:5px; }
+
+.srow {
+  display:grid;
+  grid-template-columns: 1fr 76px 46px;
+  align-items:center;
+  gap:8px;
+  background:#13162060;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:7px 10px 7px 14px;
+  position:relative;
+  transition:background .3s;
+}
+.srow::before {
+  content:''; position:absolute;
+  left:0; top:0; bottom:0; width:3px;
+  border-radius:10px 0 0 10px;
+  background:var(--row-left, var(--border));
+  transition:background .4s;
+}
+
+.sleft { display:flex; flex-direction:column; gap:5px; min-width:0; }
+
+.sname {
+  font-size:1.05rem; font-weight:700; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* bar under name */
+.bar-track {
+  height:10px; background:#080a10;
+  border-radius:999px; overflow:hidden; display:flex;
+  position:relative;
+}
+.bar-track::after {
+  content:''; position:absolute;
+  left:50%; top:0; bottom:0; width:1px;
+  background:rgba(255,255,255,.1); transform:translateX(-50%);
+}
+.t-r { background:var(--red);   border-radius:999px 0 0 999px; flex-shrink:0; height:100%; transition:width .45s cubic-bezier(.4,0,.2,1); }
+.t-w { background:var(--white); flex-shrink:0; height:100%; transition:width .45s cubic-bezier(.4,0,.2,1); }
+.t-g { background:var(--green); border-radius:0 999px 999px 0; flex-shrink:0; height:100%; transition:width .45s cubic-bezier(.4,0,.2,1); }
+
+.vote-btns { display:flex; gap:6px; align-items:center; justify-content:center; }
+.vbtn {
+  width:34px; height:34px; border-radius:8px; border:none;
+  font-size:1.15rem; font-weight:800; cursor:pointer; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .1s; flex-shrink:0;
+}
+.vbtn:active { transform:scale(.82); }
+.vbtn-plus  { background:rgba(39,217,140,.15); color:var(--green); }
+.vbtn-plus:hover  { background:rgba(39,217,140,.3); }
+.vbtn-minus { background:rgba(240,68,58,.12); color:var(--red); }
+.vbtn-minus:hover { background:rgba(240,68,58,.25); }
+
+.score-val {
+  font-family:'JetBrains Mono',monospace;
+  font-size:1rem; font-weight:700; text-align:right;
+  transition:color .4s;
+}
+
+/* ── RIGHT: RANGLISTE (nur Namen) ── */
+.rank-list { display:flex; flex-direction:column; gap:4px; }
+
+.rrow {
+  display:grid;
+  grid-template-columns:32px 1fr;
+  align-items:center;
+  gap:8px;
+  background:#13162060;
+  border:1px solid var(--border);
+  border-radius:9px;
+  padding:8px 10px;
+  position:relative;
+  transition:background .4s;
+}
+.rrow::before {
+  content:''; position:absolute;
+  left:0; top:0; bottom:0; width:3px;
+  border-radius:9px 0 0 9px;
+  background:var(--rrow-left, var(--border));
+  transition:background .4s;
+}
+
+.rrank {
+  font-size:.82rem; font-weight:700;
+  font-family:'JetBrains Mono',monospace;
+  color:var(--muted); text-align:center; line-height:1;
+}
+.rrank.g { color:var(--gold); font-size:1rem; }
+.rrank.s { color:var(--silver); font-size:1rem; }
+.rrank.b { color:var(--bronze); font-size:1rem; }
+
+.rname {
+  font-size:.95rem; font-weight:700; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* animations */
+@keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.35)} 100%{transform:scale(1)} }
+.pop { animation:pop .2s ease; }
+@keyframes flash-green { 0%{background:#0d2a1a} 100%{background:#13162060} }
+@keyframes flash-red   { 0%{background:#2a0d0d} 100%{background:#13162060} }
+.flash-g { animation:flash-green .4s ease; }
+.flash-r { animation:flash-red   .4s ease; }
+
+.empty { text-align:center; color:var(--muted); padding:40px 10px; font-size:.85rem; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>📋 Live-Bewertung</h1>
+  <input type="text" id="nameInput" placeholder="Name …" onkeydown="if(event.key==='Enter')addStudent()">
+  <button class="tbtn tbtn-add" onclick="addStudent()">+ Hinzufügen</button>
+  <button class="tbtn tbtn-preset" onclick="loadPreset(CLASS)">Klasse laden</button>
+  <div class="spacer"></div>
+  <button class="tbtn tbtn-sm" onclick="resetAll()">↺ Reset</button>
+</div>
+
+<div class="split">
+  <!-- LEFT -->
+  <div class="panel">
+    <div class="panel-head"><h2>✏️ Bewertung</h2></div>
+    <div class="panel-body">
+      <div class="row-list" id="rowList"><div class="empty">Noch keine Schüler.</div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- RIGHT: nur Namen-Ranking -->
+  <div class="panel">
+    <div class="panel-head"><h2>🏆 Rangliste</h2></div>
+    <div class="panel-body">
+      <div class="rank-list" id="rankList"><div class="empty">Noch keine Schüler.</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MAX = 10;
+const CLASS = ['Liya','Florian','Til','Jannick','Josie','Caro','Liam','Miran D.','Paul F.','Basma','Jayden H.','Nick','Jonathan','Lukas','Marie M.','Paul M.','Dario','Leyla','Miran S.','Barbara','Smilla','Adrian','Arda','Elias'];
+
+let students = JSON.parse(localStorage.getItem('bew6') || '[]');
+function save() { localStorage.setItem('bew6', JSON.stringify(students)); }
+
+function scoreColor(s) { return s>0?'#27d98c':s<0?'#f0443a':'#5c6480'; }
+function leftColor(s)  { return s>1?'#27d98c':s<-1?'#f0443a':'#1e2236'; }
+function barSegs(s) {
+  const p = s/MAX;
+  if (p>=0) { const g=Math.round(p*50); return {r:0,w:100-g,g}; }
+  else      { const r=Math.round(-p*50); return {r,w:100-r,g:0}; }
+}
+function sortedOrder() {
+  return students
+    .map((s,i)=>({i,score:s.score,name:s.name}))
+    .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name))
+    .map(x=>x.i);
+}
+function rankLabel(rank) {
+  if(rank===0) return {txt:'🥇',cls:'g'};
+  if(rank===1) return {txt:'🥈',cls:'s'};
+  if(rank===2) return {txt:'🥉',cls:'b'};
+  return {txt:`#${rank+1}`,cls:''};
+}
+
+function render() {
+  const order = sortedOrder();
+
+  // LEFT
+  document.getElementById('rowList').innerHTML = !students.length
+    ? '<div class="empty">Noch keine Schüler.</div>'
+    : order.map((si,rank) => {
+        const s=students[si], seg=barSegs(s.score), col=scoreColor(s.score);
+        const sign=s.score>0?'+':'';
+        const {txt,cls}=rankLabel(rank);
+        return `
+          <div class="srow" id="srow-${si}" style="--row-left:${leftColor(s.score)}">
+            <div class="sleft">
+              <div class="sname">${esc(s.name)}</div>
+              <div class="bar-track">
+                <div class="t-r" id="br-${si}" style="width:${seg.r}%"></div>
+                <div class="t-w" id="bw-${si}" style="width:${seg.w}%"></div>
+                <div class="t-g" id="bg-${si}" style="width:${seg.g}%"></div>
+              </div>
+            </div>
+            <div class="vote-btns">
+              <button class="vbtn vbtn-minus" onclick="vote(${si},-1)">−</button>
+              <button class="vbtn vbtn-plus"  onclick="vote(${si}, 1)">+</button>
+            </div>
+            <div class="score-val" id="sv-${si}" style="color:${col}">${sign}${s.score}</div>
+          </div>`;
+      }).join('');
+
+  // RIGHT (names only)
+  document.getElementById('rankList').innerHTML = !students.length
+    ? '<div class="empty">Noch keine Schüler.</div>'
+    : order.map((si,rank) => {
+        const s=students[si];
+        const {txt,cls}=rankLabel(rank);
+        return `
+          <div class="rrow" id="rrow-${si}" style="--rrow-left:${leftColor(s.score)}">
+            <div class="rrank ${cls}">${txt}</div>
+            <div class="rname">${esc(s.name)}</div>
+          </div>`;
+      }).join('');
+}
+
+function vote(si, delta) {
+  students[si].score = Math.max(-MAX, Math.min(MAX, students[si].score+delta));
+  save();
+
+  const seg=barSegs(students[si].score), col=scoreColor(students[si].score);
+  const lc=leftColor(students[si].score), sign=students[si].score>0?'+':'';
+
+  // patch left bar + score
+  document.getElementById(`br-${si}`).style.width = seg.r+'%';
+  document.getElementById(`bw-${si}`).style.width = seg.w+'%';
+  document.getElementById(`bg-${si}`).style.width = seg.g+'%';
+  const sv=document.getElementById(`sv-${si}`);
+  sv.style.color=col; sv.textContent=sign+students[si].score;
+  sv.classList.remove('pop'); void sv.offsetWidth; sv.classList.add('pop');
+
+  const srow=document.getElementById(`srow-${si}`);
+  srow.style.setProperty('--row-left',lc);
+  srow.classList.remove('flash-g','flash-r'); void srow.offsetWidth;
+  srow.classList.add(delta>0?'flash-g':'flash-r');
+
+  // resort both lists
+  const leftList=document.getElementById('rowList');
+  const rightList=document.getElementById('rankList');
+  const order=sortedOrder();
+  order.forEach((sid,rank) => {
+    const {txt,cls}=rankLabel(rank);
+    // left
+    const sr=document.getElementById(`srow-${sid}`);
+    if(sr) leftList.appendChild(sr);
+    // right
+    const rr=document.getElementById(`rrow-${sid}`);
+    if(rr) {
+      rightList.appendChild(rr);
+      rr.style.setProperty('--rrow-left', leftColor(students[sid].score));
+      const rb=rr.querySelector('.rrank');
+      rb.textContent=txt; rb.className='rrank'+(cls?' '+cls:'');
+    }
+  });
+}
+
+function addStudent() {
+  const inp=document.getElementById('nameInput');
+  const name=inp.value.trim(); if(!name) return;
+  students.push({name,score:0}); save(); inp.value=''; render();
+}
+function resetAll() {
+  if(!confirm('Alle zurücksetzen?')) return;
+  students.forEach(s=>s.score=0); save(); render();
+}
+function loadPreset(names) {
+  students=names.map(n=>({name:n,score:0})); save(); render();
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const savedNames=students.map(s=>s.name);
+const hasOld=!students.length||savedNames.some(n=>!CLASS.includes(n));
+if(hasOld) loadPreset(CLASS); else render();
+</script>
+</body>
+</html>
